@@ -23,6 +23,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.Button
 import android.widget.Toast
 import androidx.camera.core.Preview
 import androidx.camera.core.CameraSelector
@@ -37,6 +38,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
 import com.google.mediapipe.examples.poselandmarker.PoseLandmarkerHelper
 import com.google.mediapipe.examples.poselandmarker.MainViewModel
+import com.google.mediapipe.examples.poselandmarker.OverlayView
 import com.google.mediapipe.examples.poselandmarker.R
 import com.google.mediapipe.examples.poselandmarker.databinding.FragmentCameraBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -45,7 +47,10 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
+class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, OverlayView.OverlayViewListener {
+
+    private lateinit var overlayView: OverlayView
+    private var latestPixelLandmarks: List<Pair<Float, Float>> = emptyList()
 
     companion object {
         private const val TAG = "Pose Landmarker"
@@ -127,6 +132,23 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
+        fragmentCameraBinding.overlay.setOverlayViewListener(this)
+
+
+        val startButton: Button = view.findViewById(R.id.Start_button)
+        val stopButton: Button = view.findViewById(R.id.Stop_button)
+
+        // Enable start button and disable stop button initially
+        startButton.isEnabled = true
+        stopButton.isEnabled = false
+
+
+
+
+
+
+
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -149,8 +171,58 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
             )
         }
 
+        startButton.setOnClickListener {
+            // Disable start button and enable stop button
+            startButton.isEnabled = false
+            stopButton.isEnabled = true
+
+            // Start your camera operations here if needed
+        }
+
+        stopButton.setOnClickListener {
+            // Enable start button and disable stop button
+            startButton.isEnabled = true
+            stopButton.isEnabled = false
+
+            // Use the latest pixel landmarks
+            // latestPixelLandmarks contains the latest coordinates
+            if (latestPixelLandmarks.isNotEmpty()) {
+                // Handle the latest pixel landmarks here
+                for ((index, point) in latestPixelLandmarks.withIndex()) {
+                    Log.d(TAG, "Latest Landmark $index: (${point.first}, ${point.second})")
+                }
+
+                // Calculate the stance based on the latest pixel landmarks
+                calculateStance(latestPixelLandmarks)
+            } else {
+                // Handle case where pixel landmarks are not available
+                Log.d(TAG, "No pixel landmarks available.")
+            }
+        }
+
+
+
         // Attach listeners to UI control widgets
         initBottomSheetControls()
+
+        // Hide the bottom sheet layout
+        fragmentCameraBinding.bottomSheetLayout.bottomSheetLayout.visibility = View.GONE
+    }
+    private fun calculateStance(pixelLandmarks: List<Pair<Float, Float>>) {
+        // Identify if the batsman is left-handed or right-handed
+        if (pixelLandmarks.size >= 25) { // Assuming landmarks are of a sufficient number
+            val lmList = pixelLandmarks
+
+            if (lmList[16].second > lmList[24].second) { // right wrist more right than right hip
+                Log.d(TAG, "Stance left-handed")
+                // Update UI or perform other actions for left-handed stance
+            } else if (lmList[15].second < lmList[23].second) { // left wrist more left than left hip
+                Log.d(TAG, "Stance right-handed")
+                // Update UI or perform other actions for right-handed stance
+            }
+        } else {
+            Log.d(TAG, "Insufficient landmarks for stance calculation.")
+        }
     }
 
     private fun initBottomSheetControls() {
@@ -406,6 +478,15 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
                     PoseLandmarkerHelper.DELEGATE_CPU, false
                 )
             }
+        }
+    }
+
+    override fun onPixelLandmarksUpdated(pixelLandmarks: List<Pair<Float, Float>>) {
+        // Update the latest pixel landmarks when the listener is notified
+        latestPixelLandmarks = pixelLandmarks
+        // Log the updated pixel landmarks
+        for ((index, point) in latestPixelLandmarks.withIndex()) {
+            Log.d(TAG, "Updated Pixel Landmark $index: (${point.first}, ${point.second})")
         }
     }
 }
