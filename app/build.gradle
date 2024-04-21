@@ -50,6 +50,8 @@ android {
 
     buildFeatures {
         viewBinding true
+        //noinspection DataBindingWithoutKapt
+        dataBinding true
     }
 }
 
@@ -98,4 +100,21 @@ dependencies {
 
     // MediaPipe Library
     implementation 'com.google.mediapipe:tasks-vision:0.10.0'
+
+    // retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+
+    //Gson -> json data to java or kotlin format
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+    // okHTTP logging interceptor
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.3") // Or the latest version
+
+    implementation 'com.github.bumptech.glide:glide:4.14.2'
+
+    // Annotation processor (for Kotlin)
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.14.2'
+
+
+
 }

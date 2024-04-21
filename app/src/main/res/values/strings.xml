@@ -47,6 +47,8 @@
     <string name="label_models">Model</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="picture_name">Picture Name</string>
+    <string name="players_picture">players picture</string>
 
     <string-array name="delegate_spinner_titles">
         <item>CPU</item>

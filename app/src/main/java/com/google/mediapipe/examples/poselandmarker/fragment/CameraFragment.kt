@@ -1,20 +1,6 @@
-/*
- * Copyright 2023 The TensorFlow Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.google.mediapipe.examples.poselandmarker.fragment
 
+import NetworkUtils.poseDataApi
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
@@ -25,32 +11,43 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
 import android.widget.Toast
-import androidx.camera.core.Preview
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Camera
-import androidx.camera.core.AspectRatio
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
-import com.google.mediapipe.examples.poselandmarker.PoseLandmarkerHelper
 import com.google.mediapipe.examples.poselandmarker.MainViewModel
 import com.google.mediapipe.examples.poselandmarker.OverlayView
+import com.google.mediapipe.examples.poselandmarker.PoseLandmarkerHelper
 import com.google.mediapipe.examples.poselandmarker.R
+import com.google.mediapipe.examples.poselandmarker.data.remote.PoseData
+import com.google.mediapipe.examples.poselandmarker.data.remote.ServerResponse
 import com.google.mediapipe.examples.poselandmarker.databinding.FragmentCameraBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
+import androidx.navigation.fragment.findNavController
 
-class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, OverlayView.OverlayViewListener {
+
+class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener,
+    OverlayView.OverlayViewListener {
 
     private lateinit var overlayView: OverlayView
     private var latestPixelLandmarks: List<Pair<Float, Float>> = emptyList()
+
+
 
     companion object {
         private const val TAG = "Pose Landmarker"
@@ -85,7 +82,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
         // Start the PoseLandmarkerHelper again when users come back
         // to the foreground.
         backgroundExecutor.execute {
-            if(this::poseLandmarkerHelper.isInitialized) {
+            if (this::poseLandmarkerHelper.isInitialized) {
                 if (poseLandmarkerHelper.isClose()) {
                     poseLandmarkerHelper.setupPoseLandmarker()
                 }
@@ -95,7 +92,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
 
     override fun onPause() {
         super.onPause()
-        if(this::poseLandmarkerHelper.isInitialized) {
+        if (this::poseLandmarkerHelper.isInitialized) {
             viewModel.setMinPoseDetectionConfidence(poseLandmarkerHelper.minPoseDetectionConfidence)
             viewModel.setMinPoseTrackingConfidence(poseLandmarkerHelper.minPoseTrackingConfidence)
             viewModel.setMinPosePresenceConfidence(poseLandmarkerHelper.minPosePresenceConfidence)
@@ -144,11 +141,6 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
         stopButton.isEnabled = false
 
 
-
-
-
-
-
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -179,6 +171,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
             // Start your camera operations here if needed
         }
 
+
         stopButton.setOnClickListener {
             // Enable start button and disable stop button
             startButton.isEnabled = true
@@ -186,6 +179,12 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
 
             // Use the latest pixel landmarks
             // latestPixelLandmarks contains the latest coordinates
+
+            Log.d(
+                TAG,
+                "stopButton clicked - latestPixelLandmarks size: ${latestPixelLandmarks.size}"
+            ) // Log size for debugging
+
             if (latestPixelLandmarks.isNotEmpty()) {
                 // Handle the latest pixel landmarks here
                 for ((index, point) in latestPixelLandmarks.withIndex()) {
@@ -193,12 +192,49 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
                 }
 
                 // Calculate the stance based on the latest pixel landmarks
-                calculateStance(latestPixelLandmarks)
-            } else {
-                // Handle case where pixel landmarks are not available
-                Log.d(TAG, "No pixel landmarks available.")
+
+                val landmarksIntFormat = latestPixelLandmarks.mapIndexed { index, (x, y) ->
+                    listOf(index, x.roundToInt(), y.roundToInt())
+                }
+
+                val stance = calculateStance(latestPixelLandmarks)
+
+                val poseData = PoseData(landmarksIntFormat, stance)
+
+                val call = poseDataApi.sendPoseData(poseData)
+
+                call.enqueue(object : Callback<ServerResponse> {
+                    override fun onResponse(call: Call<ServerResponse>, response: Response<ServerResponse>) {
+                        if (response.isSuccessful) {
+                            val serverResponse = response.body()
+                            if (serverResponse != null) {
+                                // Handle the server response here
+                                val playerName = serverResponse.name
+                                val playerUrl = serverResponse.url
+
+                                // Create a Bundle to hold arguments
+                                val args = Bundle()
+                                args.putString("playerName", playerName)
+                                args.putString("playerUrl", playerUrl)
+
+// Navigate with the arguments
+                                findNavController().navigate(R.id.action_camera_to_final_result,args)
+                                Log.d(TAG, "Player Name: $playerName, Player URL: $playerUrl")
+                            } else {
+                                Log.e(TAG, "Server response body is null")
+                            }
+                        } else {
+                            Log.e(TAG, "Server response is not successful")
+                        }
+                    }
+
+                    override fun onFailure(call: Call<ServerResponse>, t: Throwable) {
+                        Log.e(TAG, "Failed to send pose data to server: ${t.message}")
+                    }
+                })
             }
         }
+
 
 
 
@@ -208,22 +244,29 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
         // Hide the bottom sheet layout
         fragmentCameraBinding.bottomSheetLayout.bottomSheetLayout.visibility = View.GONE
     }
-    private fun calculateStance(pixelLandmarks: List<Pair<Float, Float>>) {
+
+    private fun calculateStance(pixelLandmarks: List<Pair<Float, Float>>): String {
+        var stance = ""
         // Identify if the batsman is left-handed or right-handed
         if (pixelLandmarks.size >= 25) { // Assuming landmarks are of a sufficient number
             val lmList = pixelLandmarks
 
             if (lmList[16].second > lmList[24].second) { // right wrist more right than right hip
                 Log.d(TAG, "Stance left-handed")
+                stance = "Left-handed"
                 // Update UI or perform other actions for left-handed stance
             } else if (lmList[15].second < lmList[23].second) { // left wrist more left than left hip
                 Log.d(TAG, "Stance right-handed")
+                stance = "Right-handed"
                 // Update UI or perform other actions for right-handed stance
             }
         } else {
             Log.d(TAG, "Insufficient landmarks for stance calculation.")
         }
+
+        return stance
     }
+
 
     private fun initBottomSheetControls() {
         // init bottom sheet settings
@@ -302,7 +345,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
                     try {
                         poseLandmarkerHelper.currentDelegate = p2
                         updateControlsUi()
-                    } catch(e: UninitializedPropertyAccessException) {
+                    } catch (e: UninitializedPropertyAccessException) {
                         Log.e(TAG, "PoseLandmarkerHelper has not been initialized yet.")
                     }
                 }
@@ -338,7 +381,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
     // Update the values displayed in the bottom sheet. Reset Poselandmarker
     // helper.
     private fun updateControlsUi() {
-        if(this::poseLandmarkerHelper.isInitialized) {
+        if (this::poseLandmarkerHelper.isInitialized) {
             fragmentCameraBinding.bottomSheetLayout.detectionThresholdValue.text =
                 String.format(
                     Locale.US,
@@ -431,7 +474,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
     }
 
     private fun detectPose(imageProxy: ImageProxy) {
-        if(this::poseLandmarkerHelper.isInitialized) {
+        if (this::poseLandmarkerHelper.isInitialized) {
             poseLandmarkerHelper.detectLiveStream(
                 imageProxy = imageProxy,
                 isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT
@@ -489,4 +532,6 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener, Over
             Log.d(TAG, "Updated Pixel Landmark $index: (${point.first}, ${point.second})")
         }
     }
+
+
 }
