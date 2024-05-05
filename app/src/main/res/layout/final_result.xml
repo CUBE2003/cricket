@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="16dp"
@@ -18,21 +18,32 @@
             android:scaleType="centerCrop"
             android:src="@drawable/ic_baseline_photo_camera_24" />
 
+        <!-- Use a FrameLayout for overlaying the text with a black background -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#80000000">
+
+            <TextView
+                android:id="@+id/textViewName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_margin="16dp"
+                android:text="@string/demo_player_name"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp" />
+
+        </FrameLayout>
+
     </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/textViewName"
+    <ProgressBar
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="60dp"
-        android:background="#CCFFFFFF"
-        android:shadowColor="@android:color/black"
-        android:shadowDx="2"
-        android:shadowDy="2"
-        android:shadowRadius="3"
-        android:text="Your Text Here"
-        android:textColor="@android:color/black"
-        android:textSize="24sp" />
-</RelativeLayout>
+        android:layout_gravity="center"
+        android:visibility="visible" />
+
+</FrameLayout>

@@ -15,7 +15,7 @@
     ~ limitations under the License.
 -->
 <resources>
-    <string name="app_name">Pose Landmarker</string>
+    <string name="app_name">CricMatch</string>
 
     <string name="media_pipe">MediaPipe</string>
 
@@ -49,6 +49,11 @@
     <string name="stop">Stop</string>
     <string name="picture_name">Picture Name</string>
     <string name="players_picture">players picture</string>
+    <string name="demo_player_name">Demo_player_name</string>
+    <string name="accounts" />
+    <string name="camera" />
+    <string name="history" />
+
 
     <string-array name="delegate_spinner_titles">
         <item>CPU</item>

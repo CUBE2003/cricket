@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,7 +7,7 @@
     <!-- PermissionsFragment -->
     <fragment
         android:id="@+id/permissions_fragment"
-        android:name="com.google.mediapipe.examples.poselandmarker.fragment.PermissionsFragment"
+        android:name="com.google.mediapipe.examples.production.fragment.PermissionsFragment"
         android:label="PermissionsFragment">
 
         <!-- Action to navigate from PermissionsFragment to CameraFragment -->
@@ -22,27 +21,33 @@
     <!-- CameraFragment -->
     <fragment
         android:id="@+id/camera_fragment"
-        android:name="com.google.mediapipe.examples.poselandmarker.fragment.CameraFragment"
+        android:name="com.google.mediapipe.examples.production.fragment.CameraFragment"
         android:label="CameraFragment">
 
-        <!-- Action to navigate from CameraFragment to PermissionsFragment -->
-        <action
-            android:id="@+id/action_camera_to_permissions"
-            app:destination="@id/permissions_fragment"
-            app:popUpTo="@id/camera_fragment"
-            app:popUpToInclusive="true" />
-
-        <!-- Action to navigate from CameraFragment to FinalResultFragment -->
+        <!-- Actions to navigate to different destinations -->
         <action
             android:id="@+id/action_camera_to_final_result"
             app:destination="@id/final_result_fragment" />
+        <action
+            android:id="@+id/action_camera_to_try_again"
+            app:destination="@id/try_again_fragment" />
+        <action
+            android:id="@+id/action_camera_to_permissions"
+            app:destination="@id/permissions_fragment" />
+        <action
+            android:id="@+id/action_camera_to_user_account"
+            app:destination="@id/accounts_fragment" />
+        <action
+            android:id="@+id/action_camera_to_history"
+            app:destination="@id/history_fragment" />
     </fragment>
 
     <!-- FinalResultFragment -->
     <fragment
         android:id="@+id/final_result_fragment"
-        android:name="com.google.mediapipe.examples.poselandmarker.fragment.FinalResultFragment"
-        android:label="FinalResultFragment">
+        android:name="com.google.mediapipe.examples.production.fragment.FinalResultFragment"
+        android:label="FinalResultFragment"
+        >
 
         <!-- Define arguments to be passed to FinalResultFragment -->
         <argument
@@ -51,5 +56,55 @@
         <argument
             android:name="playerUrl"
             app:argType="string" />
+
+        <!-- Action to navigate back to CameraFragment -->
+        <action
+            android:id="@+id/action_final_result_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true"
+            />
     </fragment>
+
+    <!-- TryAgainFragment -->
+    <fragment
+        android:id="@+id/try_again_fragment"
+        android:name="com.google.mediapipe.examples.production.fragment.TryAgainFragment"
+        android:label="Try Again Fragment">
+
+        <!-- Action to navigate back to CameraFragment -->
+        <action
+            android:id="@+id/action_try_again_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+    <!-- UserAccountFragment -->
+    <fragment
+        android:id="@+id/accounts_fragment"
+        android:name="com.google.mediapipe.examples.production.fragment.UserAccountFragement"
+        android:label="User Account Fragment">
+
+        <!-- Action to navigate back to CameraFragment -->
+        <action
+            android:id="@+id/action_user_account_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- HistoryFragment -->
+    <fragment
+        android:id="@+id/history_fragment"
+        android:name="com.google.mediapipe.examples.production.fragment.HistoryScreenFragement"
+        android:label="History Fragment">
+
+        <!-- Action to navigate back to CameraFragment -->
+        <action
+            android:id="@+id/action_history_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
 </navigation>
